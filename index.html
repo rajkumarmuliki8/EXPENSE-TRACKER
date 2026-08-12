@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger — Expense Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="punch"></div><div class="punch"></div><div class="punch"></div>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Ledger</h1>
+      <span class="sub">Personal Expense Ledger</span>
+    </div>
+    <nav class="tabs">
+      <button data-view="overview" class="active">Overview</button>
+      <button data-view="transactions">Transactions</button>
+      <button data-view="accounts">Accounts</button>
+      <button data-view="budgets">Budgets</button>
+      <button data-view="reports">Reports</button>
+    </nav>
+  </header>
+
+  <!-- OVERVIEW -->
+  <section id="view-overview" class="view active">
+    <div class="grid-overview">
+      <div class="panel stamp-panel" id="stampPanel">
+        <div class="stamp" id="stamp">
+          <span class="lbl">Balance</span>
+          <span class="amt" id="stampAmt">₹0</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>This Month</h2>
+        <div class="stat-row">
+          <div class="stat in"><div class="k">Income</div><div class="v" id="mIncome">₹0</div></div>
+          <div class="stat out"><div class="k">Expense</div><div class="v" id="mExpense">₹0</div></div>
+          <div class="stat"><div class="k">Savings Rate</div><div class="v" id="mSaveRate">0%</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>All Time</h2>
+        <div class="stat-row">
+          <div class="stat in"><div class="k">Total In</div><div class="v" id="aIncome">₹0</div></div>
+          <div class="stat out"><div class="k">Total Out</div><div class="v" id="aExpense">₹0</div></div>
+          <div class="stat"><div class="k">Entries</div><div class="v" id="aCount">0</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Account Balances</h2>
+      <div class="acct-balance-row" id="acctBalanceRow"></div>
+    </div>
+
+    <div class="charts-row">
+      <div class="panel">
+        <h2>Spending by Category <span class="hint" id="monthLabel"></span></h2>
+        <div class="chart-box"><canvas id="catChart"></canvas></div>
+      </div>
+      <div class="panel">
+        <h2>6-Month Trend</h2>
+        <div class="chart-box"><canvas id="trendChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Recent Entries</h2>
+      <table id="recentTable">
+        <thead><tr><th>Date</th><th>Category</th><th>Account</th><th>Note</th><th style="text-align:right;">Amount</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="empty" id="recentEmpty" style="display:none;">No entries yet. Add your first transaction in the Transactions tab.</div>
+    </div>
+  </section>
+
+  <!-- TRANSACTIONS -->
+  <section id="view-transactions" class="view">
+    <div class="panel">
+      <h2 id="formTitle">Add Entry</h2>
+      <form class="entry" id="entryForm">
+        <div class="field">
+          <label>Type</label>
+          <div class="type-toggle">
+            <button type="button" class="active exp" id="typeExpBtn" data-type="expense">Expense</button>
+            <button type="button" class="inc" id="typeIncBtn" data-type="income">Income</button>
+            <button type="button" class="xfer" id="typeXferBtn" data-type="transfer">Transfer</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="fDate">Date</label>
+          <input type="date" id="fDate" required>
+        </div>
+        <div class="field" id="categoryField">
+          <label for="fCategory">Category</label>
+          <select id="fCategory" required></select>
+        </div>
+        <div class="field" id="accountField">
+          <label for="fAccount">Account</label>
+          <select id="fAccount" required></select>
+        </div>
+        <div class="field" id="fromAccountField" style="display:none;">
+          <label for="fFromAccount">From Account</label>
+          <select id="fFromAccount"></select>
+        </div>
+        <div class="field" id="toAccountField" style="display:none;">
+          <label for="fToAccount">To Account</label>
+          <select id="fToAccount"></select>
+        </div>
+        <div class="field">
+          <label for="fAmount">Amount (₹)</label>
+          <input type="number" id="fAmount" min="0" step="0.01" placeholder="0.00" required>
+        </div>
+        <div class="field">
+          <label for="fNote">Note</label>
+          <input type="text" id="fNote" placeholder="Optional note">
+        </div>
+        <div class="field">
+          <button type="submit" class="btn" id="submitBtn">Add Entry</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2>All Entries</h2>
+      <div class="filters">
+        <div class="field">
+          <label>Search</label>
+          <input type="search" id="fltSearch" placeholder="Search notes or category">
+        </div>
+        <div class="field">
+          <label>Type</label>
+          <select id="fltType">
+            <option value="all">All</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+            <option value="transfer">Transfer</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <select id="fltCategory"><option value="all">All</option></select>
+        </div>
+        <div class="field">
+          <label>Account</label>
+          <select id="fltAccount"><option value="all">All</option></select>
+        </div>
+        <div class="field">
+          <label>From</label>
+          <input type="date" id="fltFrom">
+        </div>
+        <div class="field">
+          <label>To</label>
+          <input type="date" id="fltTo">
+        </div>
+        <div class="field">
+          <label>Sort</label>
+          <select id="fltSort">
+            <option value="date-desc">Date (newest)</option>
+            <option value="date-asc">Date (oldest)</option>
+            <option value="amt-desc">Amount (high-low)</option>
+            <option value="amt-asc">Amount (low-high)</option>
+          </select>
+        </div>
+        <button class="btn ghost small" id="clearFilters">Clear</button>
+      </div>
+      <table id="txTable">
+        <thead><tr><th>Date</th><th>Category</th><th>Account</th><th>Note</th><th style="text-align:right;">Amount</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="empty" id="txEmpty" style="display:none;">No entries match your filters.</div>
+    </div>
+  </section>
+
+  <!-- ACCOUNTS -->
+  <section id="view-accounts" class="view">
+    <div class="panel">
+      <h2>Accounts</h2>
+      <div class="add-budget-form">
+        <div class="field">
+          <label for="acctName">Account Name</label>
+          <input type="text" id="acctName" placeholder="e.g. Credit Card">
+        </div>
+        <button class="btn" id="addAccountBtn">Add Account</button>
+      </div>
+      <div class="budget-list" id="accountList"></div>
+    </div>
+  </section>
+
+  <!-- BUDGETS -->
+  <section id="view-budgets" class="view">
+    <div class="panel">
+      <h2>Monthly Budgets <span class="hint">resets each calendar month</span></h2>
+      <div class="add-budget-form">
+        <div class="field">
+          <label for="bCategory">Category</label>
+          <select id="bCategory"></select>
+        </div>
+        <div class="field">
+          <label for="bLimit">Monthly Limit (₹)</label>
+          <input type="number" id="bLimit" min="0" step="1" placeholder="e.g. 3000">
+        </div>
+        <button class="btn" id="addBudgetBtn">Set Budget</button>
+      </div>
+      <div class="budget-list" id="budgetList"></div>
+      <div class="empty" id="budgetEmpty" style="display:none;">No budgets set yet. Add one above to start tracking limits.</div>
+    </div>
+  </section>
+
+  <!-- REPORTS -->
+  <section id="view-reports" class="view">
+    <div class="panel">
+      <h2>Income vs Expense — Last 6 Months</h2>
+      <div class="chart-box" style="height:260px;"><canvas id="reportBarChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>Category Totals <span class="hint" id="reportScopeLabel">this month</span></h2>
+      <div class="chart-box" style="height:280px;"><canvas id="reportCatChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>Export</h2>
+      <p style="font-family:var(--font-mono); font-size:0.8rem; color:var(--ink-soft);">Download every entry as a CSV file for spreadsheets or backups.</p>
+      <button class="btn" id="exportCsvBtn">Export CSV</button>
+    </div>
+  </section>
+
+  <footer class="note">
+    Data is stored privately to your account for this ledger. <button class="reset-link" id="resetBtn">Clear all data</button>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
