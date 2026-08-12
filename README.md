@@ -37,7 +37,7 @@ Clone the repository and open `index.html` in your browser.
 
 ## Live Demo
 
-Deployed using **GitHub Pages**.
+**https://rajkumarmuliki8.github.io/EXPENSE-TRACKER/**
 
 ## Future Improvements
 
