@@ -593,6 +593,42 @@
     toast('CSV exported');
   });
 
+  $('#exportJsonBtn').addEventListener('click', ()=>{
+    const payload = { transactions: state.transactions, budgets: state.budgets, accounts: state.accounts, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'ledger-backup-' + todayStr() + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    toast('Backup downloaded');
+  });
+
+  $('#restoreBtnTrigger').addEventListener('click', ()=> $('#restoreInput').click());
+  $('#restoreInput').addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      try{
+        const parsed = JSON.parse(reader.result);
+        if(!Array.isArray(parsed.transactions)) throw new Error('Not a valid backup file');
+        if(!confirm('Replace all current data with this backup?')) { e.target.value=''; return; }
+        state.transactions = parsed.transactions || [];
+        state.budgets = parsed.budgets || {};
+        state.accounts = (parsed.accounts && parsed.accounts.length) ? parsed.accounts : DEFAULT_ACCOUNTS.slice();
+        saveState();
+        refreshAllAccountSelects();
+        renderAll();
+        toast('Backup restored');
+      }catch(err){
+        toast('Could not read that file');
+      }
+      e.target.value = '';
+    };
+    reader.readAsText(file);
+  });
+
   $('#resetBtn').addEventListener('click', async ()=>{
     if(!confirm('Clear all transactions, budgets, and accounts? This cannot be undone.')) return;
     state = { transactions: [], budgets: {}, accounts: DEFAULT_ACCOUNTS.slice() };
